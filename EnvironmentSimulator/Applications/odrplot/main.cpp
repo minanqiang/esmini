@@ -21,47 +21,96 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include "RoadManager.hpp"
 #include "CommonMini.hpp"
 
+using namespace std;
 using namespace roadmanager;
 
 int main(int argc, char *argv[])
 {
-	std::string output_file_name = "track.csv";
-	std::ofstream file;
-	std::string sampling_step = "1.0";
-	double step_length_target;
-	static char strbuf[1024];
-
-	if (argc < 2)
+	if (argc != 3)
 	{
-		printf("Usage: ordplot openDriveFile.xodr [Output file, default=output.csv] [Sampling_step, default=1.0]\n");
+		printf("Usage: AppendLaneId input_file openDriveFile.xodr\n");
 		return -1;
 	}
-	else
-	{
-		if (argc > 2)
-		{
-			output_file_name =  argv[2];
-		}
+	std::string output_file_name = "out.csv";
+	std::fstream fin, fout;
 
-		if (argc > 3)
-		{
-			sampling_step = argv[3];
-		}
-	}
+	string traj_file_path = argv[1];
+	string opendrive_file = argv[2];
 
-	step_length_target = std::stod(sampling_step);
+	string line, word, new_line;
+    vector<string> row;
 
 	try
 	{
-		if (Position::LoadOpenDrive(argv[1]) == false)
+		// Open an existing record
+		fin.open(traj_file_path, ios::in);
+	
+		// Create a new file to store updated data
+		fout.open(output_file_name, ios::out);
+
+		if (Position::LoadOpenDrive(opendrive_file.c_str()) == false)
 		{
-			printf("Failed to open OpenDRIVE file %s\n", argv[1]);
+			printf("Failed to open OpenDRIVE file %s\n", opendrive_file.c_str());
 			return -1;
 		}
-		file.open(output_file_name);
+		cout << "read opendrive finish." << "\n";
+
+		line.clear();
+		getline(fin, line);
+		// line.insert(line.size()-1, ",TrackId,LaneId,LaneGlobalId\n");
+		line.append("TrackId,LaneId,LaneGlobalId\n");
+		fout << line ;
+
+		int i = -1;
+		while (!fin.eof()) {
+			row.clear();
+			line.clear();
+			new_line.clear();
+
+			i++;
+			if (i % 10000 == 0)
+			{
+				cout << i <<"\n";
+			}
+			// cout << "start" << "\n";
+			getline(fin, line);
+			if (line.empty())
+			{
+				continue;
+			}
+			// cout << line << "\n";
+			std::stringstream s(line);
+	
+			
+			while (getline(s, word, ',')) {
+				row.push_back(word);
+			} 
+			for (int j=0; j <= 7; j++)
+			{
+				new_line.append(row[j] + ",");
+			}
+			double pos_x = stod(row[2]);
+			double pos_y = stod(row[3]);
+			double heading = stod(row[6]);
+
+			Position pos;
+			pos.SetInertiaPos(pos_x, pos_y, heading, true);
+			std::string laneId = std::to_string(pos.GetLaneId());
+			std::string tId = std::to_string(pos.GetTrackId());
+			std::string gId = to_string(pos.GetLaneGlobalId());
+			string laneInfo = tId + string(",") + laneId + string(",") +  gId + string("\n");
+			new_line.append(laneInfo);
+
+			// cout << line;
+		    fout << new_line;
+			// cout << "end" << "\n";
+
+		}
+
 	}
 	catch (std::exception& e)
 	{
@@ -69,48 +118,8 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	Position* pos = new Position();
-
-	OpenDrive *od = Position::GetOpenDrive();
-
-	for (int r = 0; r < od->GetNumOfRoads(); r++)
-	{
-		Road *road = od->GetRoadByIdx(r);
-
-		for (int i = 0; i < road->GetNumberOfLaneSections(); i++)
-		{
-			LaneSection *lane_section = road->GetLaneSectionByIdx(i);
-			double s_start = lane_section->GetS();
-			double s_end = s_start + lane_section->GetLength();
-			int steps = MAX(1, (int)((s_end - s_start) / step_length_target));
-			double step_length = steps > 0 ? (s_end - s_start) / steps : s_end - s_start;
-
-			for (int j = 0; j < lane_section->GetNumberOfLanes(); j++)
-			{
-				Lane *lane = lane_section->GetLaneByIdx(j);
-
-				file << "lane, " << road->GetId() << ", " << i << ", " << lane->GetId() << (lane->IsDriving() ? ", driving" : ", no-driving") << std::endl;
-
-				for (int k = 0; k < steps + 1; k++)
-				{
-					double s = MIN(s_end, s_start + k * step_length);
-
-					// Set lane offset to half the lane width in order to mark the outer edge of the lane (laneOffset = 0 means middle of lane)
-					pos->SetLanePos(road->GetId(), lane->GetId(), s, SIGN(lane->GetId())*lane_section->GetWidth(s, lane->GetId())*0.5, i);
-
-					// Write the point to file
-					snprintf(strbuf, sizeof(strbuf), "%f, %f, %f, %f\n", pos->GetX(), pos->GetY(), pos->GetZ(), pos->GetH());
-					file << strbuf;
-				}
-			}
-		}
-	}
-	file.close();
-
-	delete pos;
-
-	printf("Created %s using stepsize %.2f\n", output_file_name.c_str(), step_length_target);
-	printf("To plot it, run EnvironmentSimulator/Applications/odrplot/xodr.py %s\n", output_file_name.c_str());
+	fin.close();
+	fout.close();
 
 	return 0;
 }
