@@ -13,7 +13,7 @@ ${PUGIXML_INCLUDE_DIR}
 set(TARGET odrplot)
 
 set ( SOURCES
-  appendLaneId.cpp
+  main.cpp
 )
 
 set ( INCLUDES
