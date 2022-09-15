@@ -48,8 +48,9 @@ else()
     set(DIRENT_INCLUDE_DIR "")
 endif()
 
-
-include_directories( ${PUGIXML_INCLUDE_DIR} ${EXPR_INCLUDE_DIR})
+set(PROTO_INCLUDE_DIR "/usr/include/google/protobuf")
+set(GOOGLE_PROTOBUF_VERSION  3006001)
+include_directories( ${PUGIXML_INCLUDE_DIR} ${EXPR_INCLUDE_DIR} ${PROTO_INCLUDE_DIR})
 
 set(USE_OSG True CACHE BOOL "If projects that depend on OpenSceneGraph should be compiled.")
 set(USE_OSI True CACHE BOOL "If code that depend on OSI should be compiled.")

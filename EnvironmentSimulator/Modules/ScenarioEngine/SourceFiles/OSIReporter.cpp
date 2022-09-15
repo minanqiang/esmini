@@ -2064,7 +2064,7 @@ void OSIReporter::CreateLaneBoundaryFromSensordata(const osi3::SensorData &sd, i
 		//    sd.host_vehicle_location().position().y(),
 		//    sd.host_vehicle_location().orientation().yaw(), x,y);
 
-		new_lane_boundary->mutable_id()->set_value(lane_boundary.header().ground_truth_id().at(0).value());
+		new_lane_boundary->mutable_id()->set_value(lane_boundary.header().ground_truth_id()[0].value());
 		osi3::LaneBoundary_BoundaryPoint * boundary_point =
 		new_lane_boundary->add_boundary_line();
 

@@ -2,10 +2,5 @@
 
 mkdir build
 cd build
-cmake ../ -DUSE_OSG=true -DCMAKE_BUILD_TYPE=Release
-cd ..
-
-mkdir build-debug
-cd build-debug
-cmake ../ -DUSE_OSG=true -DCMAKE_BUILD_TYPE=Debug
+cmake ../ -DUSE_OSG=true -DUSE_OSI=true -DCMAKE_BUILD_TYPE=Release
 cd ..
